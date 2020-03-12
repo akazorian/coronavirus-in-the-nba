@@ -11,7 +11,7 @@ HOMEFULLTEAMNAMEIDX = 6
 
 contagious_time = datetime.timedelta(days=14)
 date_of_announcement = datetime.datetime.strptime('3/11/20', '%m/%d/%y')
-date_of_infection = date_of_announcement - contagious_time
+dates_of_infection = [date_of_announcement - contagious_time, date_of_announcement - (2 * contagious_time)]
 infected_team = 'Utah Jazz'
 
 csv_file_name = "nba-full-schedule-2019-2020.csv"
@@ -50,7 +50,7 @@ with open(csv_file_name, 'r') as csv_file:
 	visited_games = set()
 	stack_of_games = list()
 	for root_game in reversed(teams[infected_team]):
-		if date_of_infection < root_game["date"] and root_game["date"] < cancellation_time:
+		if dates_of_infection[0] < root_game["date"] and root_game["date"] < cancellation_time:
 			stack_of_games.append(root_game)
 	 
 	while len(stack_of_games) > 0:
@@ -65,15 +65,49 @@ with open(csv_file_name, 'r') as csv_file:
 			infected_teams.add(game['away_team'])
 
 		for home_team_game in reversed(teams[game['home_team']]):
-			if date_of_infection < home_team_game['date'] and home_team_game['game_time'] < cancellation_time:
+			if dates_of_infection[0] < home_team_game['date'] and home_team_game['game_time'] < cancellation_time:
 				break
 			stack_of_games.append(home_team_game)
 
 		for away_team_game in reversed(teams[game['away_team']]):
-			if date_of_infection < away_team_game['date'] and away_team_game['game_time'] < cancellation_time:
+			if dates_of_infection[0] < away_team_game['date'] and away_team_game['game_time'] < cancellation_time:
 				break
 			stack_of_games.append(away_team_game)
 
+	print("Assuming Gobert is Patient 0")
+	print("Number of infected teams: ", len(infected_teams))
+	print("Infected teams: ")
+	for team in infected_teams:
+		print("\t- ", team)
+
+	for team in list(infected_teams):
+		stack_of_games = list()
+		for root_game in reversed(teams[team]):
+			if dates_of_infection[1] < root_game["date"] and root_game["date"] < cancellation_time:
+				stack_of_games.append(root_game)
+		 
+		while len(stack_of_games) > 0:
+			game = stack_of_games.pop()
+			if game['id'] in visited_games:
+				continue
+
+			visited_games.add(game['id'])
+			if game['home_team'] not in infected_teams:
+				infected_teams.add(game['home_team'])
+			if game['away_team'] not in infected_teams:
+				infected_teams.add(game['away_team'])
+
+			for home_team_game in reversed(teams[game['home_team']]):
+				if dates_of_infection[1] < home_team_game['date'] and home_team_game['game_time'] < cancellation_time:
+					break
+				stack_of_games.append(home_team_game)
+
+			for away_team_game in reversed(teams[game['away_team']]):
+				if dates_of_infection[1] < away_team_game['date'] and away_team_game['game_time'] < cancellation_time:
+					break
+				stack_of_games.append(away_team_game)
+
+	print("Assuming Gobert is not Patient 0")
 	print("Number of infected teams: ", len(infected_teams))
 	print("Infected teams: ")
 	for team in infected_teams:
